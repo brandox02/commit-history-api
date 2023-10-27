@@ -1,0 +1,180 @@
+name: Deploy Laravel App for staging
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - "master"
+    paths:
+      - "**/*.ts"
+      - "**/*.js"
+      - "package.json"
+      - "package.lock.json"
+      - "Dockerfile"
+      - ".github/workflows/staging.yml"
+      - ".github/workflows/development.yml"
+    types: [closed]
+
+env:
+  REGISTRY: ${{ secrets.OGTIC_DOCKER_REGISTRY }}
+
+jobs:
+  build-image:
+    name: Build App Image
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-20.04
+    outputs:
+      image_tag: ${{ steps.image_info.outputs.image_tag }}
+    steps:
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v4.4.1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.OGTIC_DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.OGTIC_DOCKER_REGISTRY_PASSWORD }}
+
+      - name: Set Image Info name
+        id: image_info
+        run: |
+          echo "image_name=${{ env.REGISTRY }}/ogtic/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}" >> $GITHUB_OUTPUT
+          echo "image_tag=${{ env.GITHUB_BASE_REF_SLUG }}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: ${{ steps.image_info.outputs.image_name }}:${{ steps.image_info.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-k8s:
+    name: Deploy on K8s cluster
+    needs: [build-image]
+    env:
+      NAMESPACE: reuniones-ogtic-staging
+    runs-on: [self-hosted, pys-k8s-arc]
+    steps:
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v4.4.1
+
+      - name: Create Kubeconfig File
+        run: |
+          mkdir ~/.kube
+          echo '${{ secrets.KUBECONFIG }}' > ~/.kube/config
+
+      - name: Set deployment info
+        id: deployment_info
+        run: |
+          echo "deployment_name=${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}-${{ needs.build-image.outputs.image_tag }}" >> $GITHUB_OUTPUT
+          echo "url=${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-dev.${{ secrets.DOMAIN }}" >> $GITHUB_OUTPUT
+          echo "db_name=${{ secrets.DB_NAME }}_${{ needs.build-image.outputs.image_tag }}" >> $GITHUB_OUTPUT
+          echo "db_user=${{ secrets.DB_USERNAME }}_${{ needs.build-image.outputs.image_tag }}" >> $GITHUB_OUTPUT
+          echo "env_file=secret-${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}-${{ needs.build-image.outputs.image_tag }}" >> $GITHUB_OUTPUT
+
+      - name: Create .env file
+        run: |
+          cat << EOF > ${{ steps.deployment_info.outputs.env_file }}
+          NODE_ENV=${{ env.NAMESPACE }}
+          DOMAIN_NAME=${{ steps.deployment_info.outputs.url }}
+          WAY_USER_VALIDATE=${{ secrets.WAY_USER_VALIDATE }}
+          VALIDATE_ATTEMPS=${{ secrets.VALIDATE_ATTEMPS }}
+          MAX_IMG_SIZE=${{ secrets.MAX_IMG_SIZE }}
+          ACCEPT_IMG_TYPES=${{ secrets.ACCEPT_IMG_TYPES }}
+          MAX_FILE_SIZE=${{ secrets.MAX_FILE_SIZE }}
+          ACCEPT_FILE_TYPES=${{ secrets.ACCEPT_FILE_TYPES }}
+          MAIL_ENCRYPTION=${{ secrets.MAIL_ENCRYPTION }}
+          MAIL_FROM_ADDRESS=${{ secrets.MAIL_FROM_ADDRESS }}
+          MAIL_FROM_NAME=${{ secrets.MAIL_FROM_NAME }}
+          MAIL_HOST=${{ secrets.MAIL_HOST }}
+          MAIL_MAILER=${{ secrets.MAIL_MAILER }}
+          MAIL_PORT=${{ secrets.MAIL_PORT }}
+          MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          DB_DATABASE=${{ steps.deployment_info.outputs.db_name }}
+          DB_USERNAME=${{ steps.deployment_info.outputs.db_user }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          SALT_SECRET=${{ secrets.SALT_SECRET }}
+          EOF
+
+      - name: Create secret with env file
+        run: |
+          kubectl --namespace ${{ env.NAMESPACE }} delete secret ${{ steps.deployment_info.outputs.deployment_name }} --ignore-not-found
+          kubectl --namespace ${{ env.NAMESPACE }} \
+            create secret generic ${{ steps.deployment_info.outputs.deployment_name }} \
+            --from-env-file ${{ steps.deployment_info.outputs.env_file }}
+
+
+      - name: Add chart repo
+        run: |
+          echo ${{ secrets.HELM_REPO_PASSWORD }} | helm repo add \
+          --username ${{ secrets.HELM_REPO_USER }} \
+          --password-stdin repo '${{ secrets.HELM_REPO_URL }}'
+
+      - name: Install Helm package release
+        run: |
+          helm upgrade ${{ steps.deployment_info.outputs.deployment_name }} repo/nestjs-api \
+            --namespace ${{ env.NAMESPACE }} \
+            --set nameOverride=${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }} \
+            --set imagePullSecrets[0].name=regcred \
+            --set image.repository=${{ env.REGISTRY }}/ogtic/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }} \
+            --set image.tag=${{ needs.build-image.outputs.image_tag }} \
+            --set podAnnotations.branch="${{ env.GITHUB_HEAD_REF_SLUG || env.GITHUB_REF_SLUG }}" \
+            --set podAnnotations.commitSha="${{ github.sha }}" \
+            --set secrets.nestjsEnv.name=${{ steps.deployment_info.outputs.deployment_name }} \
+            --set database.enabled=true \
+            --set database.scriptor.enabled=true \
+            --set database.scriptor.removeOnDelete=true \
+            --set database.scriptor.createDBOnInstall=true \
+            --set ingress.enabled=true \
+            --set ingress.tls[0].secretName='${{ secrets.DOMAIN }}' \
+            --set ingress.tls[0].hosts[0]='${{ steps.deployment_info.outputs.url }}' \
+            --set ingress.hosts[0].host='${{ steps.deployment_info.outputs.url }}' \
+            --set ingress.hosts[0].paths[0].path='/' \
+            --set ingress.hosts[0].paths[0].pathType='Prefix' \
+            --set resources.enabled=true \
+            --install --wait-for-jobs --atomic --force
+
+  post-deploy:
+    name: Executes post-deployment tasks
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    needs: [deploy-k8s, build-image]
+    steps:
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v4.4.1
+
+      - name: Set deployment info for K8s
+        id: deployment_info_k8s
+        run: |
+          echo "deployment_name=${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}-${{ needs.build-image.outputs.image_tag }}" >> $GITHUB_OUTPUT
+          echo "url=https://${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-dev.${{ secrets.DOMAIN }}/ping" >> $GITHUB_OUTPUT
+
+      - name: Check service URL for K8s
+        uses: jtalk/url-health-check-action@v2
+        with:
+          url: "${{ steps.deployment_info_k8s.outputs.url }}"
+          max-attempts: 6
+          retry-delay: 35s
+          retry-all: false
+
+      - name: Comment PR with new Staging URL
+        if: ${{ success() }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **New Staging URL for ${{ steps.deployment_info.outputs.deployment_name }}:**
+             🔗: ${{ steps.deployment_info_k8s.outputs.url }}
+
+             > The URL provided before for testing may not be available anymore.
+          reactions: rocket
