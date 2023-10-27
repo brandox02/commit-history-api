@@ -9,6 +9,7 @@ import { EmailModule } from "./modules/email/email.module";
 import { SavefilesModule } from "./modules/savefiles/savefiles.module";
 import { configs } from "./common/app.config";
 import { join } from "path";
+import { CommitHistoryModule } from './modules/commit-history/commit-history.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { join } from "path";
     AuthModule,
     EmailModule,
     SavefilesModule,
+    CommitHistoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

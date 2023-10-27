@@ -60,11 +60,11 @@ export class AuthService {
   async validateUser(validateUserDTO: ValidateUserDTO) {
     const user = await this.userService.findOneByEmail(validateUserDTO.email);
     if (!user) {
-      throw new HttpException('No se ha encontrado este usuario', 404);
+      throw new HttpException('User not found', 404);
     }
     if (!user?.validatorToken) {
       throw new HttpException(
-        'No se puede proceder ya que este usuario no posee un código de validación previamente generado',
+        'There was an error due do not exist a token generated to this user',
         HttpStatus.FORBIDDEN,
       );
     }
