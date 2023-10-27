@@ -10,7 +10,7 @@ export class EmailService {
 
       await this.mailerService.sendMail({
         to: email,
-        subject: 'Bienvenido a Reuniones App!',
+        subject: 'Welcome to Commit History App!',
         template: './confirmation',
         context: {
           name: `${firstname} ${lastname}`,

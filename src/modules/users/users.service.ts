@@ -31,8 +31,6 @@ export class UsersService {
       const createUser = {
         ...createUserDto,
         profile: {
-          position: createUserDto.position,
-          institution: createUserDto.institution,
           firstname: createUserDto.firstname,
           lastname: createUserDto.lastname
         },

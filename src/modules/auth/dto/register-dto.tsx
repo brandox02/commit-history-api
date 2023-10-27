@@ -12,14 +12,14 @@ export class RegisterDto {
    password: string
 
    @IsNotEmpty()
-   @ApiProperty({ example: 'Emiliano' })
+   @ApiProperty({ example: 'Brandon' })
    firstname: string
 
    @IsNotEmpty()
-   @ApiProperty({ example: 'Santana' })
+   @ApiProperty({ example: 'Fernández' })
    lastname: string
 
    @IsNotEmpty()
-   @ApiProperty({ example: 'Desarrollador' })
+   @ApiProperty({ example: 'Developer' })
    position: string
 }
