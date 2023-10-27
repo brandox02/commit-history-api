@@ -19,7 +19,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { SavefilesService } from '../savefiles/savefiles.service';
 import { CreateProfileDto } from './dto/update-profile.dto';
 import { paginateDto } from 'src/common/paginate.dto';
 
@@ -29,7 +28,6 @@ import { paginateDto } from 'src/common/paginate.dto';
 @Controller('users')
 export class UsersController {
   constructor(
-    private saveFileService: SavefilesService,
     private readonly usersService: UsersService,
   ) { }
 
@@ -54,7 +52,7 @@ export class UsersController {
     // test2
     const newuser = {
       ...createUserDto,
-      password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),// comment
+      password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
       validatorToken: String(validatorToken),
     };
 

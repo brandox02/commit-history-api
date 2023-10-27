@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+
 import { CommitAuthorClass } from "../types";
 
 export class FindCommitHistoryOutputDto {
