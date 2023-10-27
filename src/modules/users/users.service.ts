@@ -1,4 +1,4 @@
-import { forwardRef, HttpException, Inject, Injectable } from "@nestjs/common";
+import { HttpException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { EmailService } from "../email/email.service";
@@ -8,7 +8,6 @@ import { Profile } from "./entities/profile.entity";
 import { User } from "./entities/user.entity";
 import { paginate } from "src/common/paginate";
 import { paginateDto } from "src/common/paginate.dto";
-import { AuthService } from "../auth/auth.service";
 
 @Injectable()
 export class UsersService {
@@ -18,7 +17,6 @@ export class UsersService {
     @InjectRepository(Profile)
     private readonly profileRepository: Repository<Profile>,
     private emailService: EmailService,
-    @Inject(forwardRef(() => AuthService)) private readonly authService: AuthService,
   ) { }
 
   async create(createUserDto: CreateUserDto) {
@@ -39,8 +37,6 @@ export class UsersService {
       const saved = await this.userRepository.save(
         this.userRepository.create(createUser)
       );
-
-
 
       if (process.env.WAY_USER_VALIDATE === "email") {
         await this.emailService.sendUserConfirmation(

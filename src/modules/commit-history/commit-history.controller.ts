@@ -13,8 +13,8 @@ export class CommitHistoryController {
   @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  findAll(@Query() { repo, username }: FindCommitHistoryDto) {
-    return this.commitHistoryService.findAll(username, repo);
+  findAll(@Query() data: FindCommitHistoryDto) {
+    return this.commitHistoryService.findAll(data);
   }
 
 }

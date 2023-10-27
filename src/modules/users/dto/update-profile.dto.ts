@@ -10,9 +10,4 @@ export class CreateProfileDto {
   @ApiProperty()
   lastname: string;
 
-  @ApiProperty({ example: "position 1" })
-  position: string;
-
-  @ApiProperty({ example: "OGTIC" })
-  institution: string;// i aint got the time
 }

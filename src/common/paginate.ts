@@ -42,7 +42,7 @@ export async function paginate<T>({
   return paginateResponse(data, page, take);
 }
 
-function paginateResponse(data: any[], page: number, limit: number) {
+export function paginateResponse(data: any[], page: number, limit: number) {
   const [result, total] = data;
   const lastPage = Math.ceil(total / limit);
   const nextPage = page + 1 > lastPage ? null : page + 1;
