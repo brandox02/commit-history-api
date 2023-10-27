@@ -1,17 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { ClassSerializerInterceptor, Controller, Get, Query, UseInterceptors } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CommitHistoryService } from './commit-history.service';
-import { CreateCommitHistoryDto } from './dto/create-commit-history.dto';
-import { UpdateCommitHistoryDto } from './dto/update-commit-history.dto';
+import { FindCommitHistoryDto } from './dto/find-commit-history.dto';
 
 @Controller('commit-history')
+@ApiTags('Commit History')
+@UseInterceptors(ClassSerializerInterceptor)
 export class CommitHistoryController {
   constructor(private readonly commitHistoryService: CommitHistoryService) { }
 
 
   @Get()
-  findAll() {
-    return this.commitHistoryService.findAll('', '');
+  findAll(@Query() { repo, username }: FindCommitHistoryDto) {
+    return this.commitHistoryService.findAll(username, repo);
   }
-
 
 }

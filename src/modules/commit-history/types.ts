@@ -1,3 +1,10 @@
+
+
+export type NotFoundApiResponse = {
+   "message": string
+   "documentation_url": string
+}
+
 export interface Commit {
    sha: string;
    node_id: string;
