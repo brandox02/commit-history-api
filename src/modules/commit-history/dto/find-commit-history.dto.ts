@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { paginateDto } from "src/common/paginate.dto";
 
-export class FindCommitHistoryDto extends paginateDto {
+export class FindCommitHistoryDto {
    @ApiProperty()
    username: string;
    @ApiProperty()

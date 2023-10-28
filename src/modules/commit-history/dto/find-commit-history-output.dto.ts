@@ -7,4 +7,6 @@ export class FindCommitHistoryOutputDto {
    message: string;
    url: string;
    comment_count: number
+   id: string
+   avatar_url: string
 }

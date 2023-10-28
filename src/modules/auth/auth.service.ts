@@ -19,7 +19,7 @@ export class AuthService {
   async login(logindto: LoginDto) {
     const user = await this.userService.findOneByEmail(logindto.email);
     if (!user) {
-      throw new HttpException('Usuario o contraseña incorrecta', 403);
+      throw new HttpException('user or password wrong', 403);
     }
 
     if (!user.isValidated) {
@@ -29,7 +29,7 @@ export class AuthService {
     const passwordIsCorrect = await compare(logindto.password, user.password);
 
     if (!passwordIsCorrect) {
-      throw new HttpException('Usuario o contraseña incorrecta', 403);
+      throw new HttpException('user or password wrong', 403);
     }
 
     const token = this.jwtService.sign({
@@ -92,7 +92,7 @@ export class AuthService {
     const user = await this.userService.findOneByEmail(changePassDto.email);
 
     if (!user) {
-      throw new HttpException('Usuario o contraseña incorrecta', 403);
+      throw new HttpException('user or password wrong', 403);
     }
 
     const passwordIsCorrect = await compare(
@@ -101,7 +101,7 @@ export class AuthService {
     );
 
     if (!passwordIsCorrect) {
-      throw new HttpException('Usuario o contraseña incorrecta', 403);
+      throw new HttpException('user or password wrong', 403);
     }
 
     user.password = hashSync(changePassDto.password, 10);

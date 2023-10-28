@@ -1,21 +1,21 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { paginate, paginateResponse } from 'src/common/paginate';
-import { paginateDto } from 'src/common/paginate.dto';
 import { FindCommitHistoryOutputDto } from './dto/find-commit-history-output.dto';
 import { FindCommitHistoryDto } from './dto/find-commit-history.dto';
 import { Commit } from './types';
 
 @Injectable()
 export class CommitHistoryService {
-  async findAll({ page, sort, take, repo, username }: FindCommitHistoryDto) {
+  async findAll({ repo, username }: FindCommitHistoryDto) {
 
     function formatResponse(commits: Commit[]): FindCommitHistoryOutputDto[] {
-      return commits.map(({ commit: { comment_count, author, committer, message, url } }) => ({
+      return commits.map(({ commit: { comment_count, author, committer, message, }, html_url, node_id, author: { avatar_url } }) => ({
         author: author,
         comment_count,
         committer,
         message,
-        url
+        url: html_url,
+        id: node_id,
+        avatar_url
       }))
     }
 
