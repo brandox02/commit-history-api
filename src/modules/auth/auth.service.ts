@@ -79,7 +79,7 @@ export class AuthService {
       //   user.nextTimeTokenGen = this.userService.NextTimeTokenGen();
       //   this.userService.validateUser(user);
       // }
-      throw new HttpException('Token de autorizacion invalido', 403);
+      throw new HttpException('Invalid token', 403);
     }
 
     user.isValidated = true;
@@ -126,11 +126,11 @@ export class AuthService {
 
       if (user.attemps >= Number(process.env.VALIDATE_ATTEMPS)) {
         user.attemps = 0;
-        user.validatorToken = null; //String(this.userService.generateCode());
+        user.validatorToken = null;
         user.nextTimeTokenGen = this.userService.NextTimeTokenGen();
         this.userService.validateUser(user);
       }
-      throw new HttpException('Token de autorizacion invalido', 403);
+      throw new HttpException('Invalid token', 403);
     }
 
     user.password = hashSync(changePassDto.password, 10);

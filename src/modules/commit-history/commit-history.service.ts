@@ -21,11 +21,14 @@ export class CommitHistoryService {
 
     const response = await fetch(`https://api.github.com/repos/${username}/${repo}/commits`);
     const commits = await response.json();
-
+    if (commits?.message && commits.message.includes('API rate limit exceeded')) {
+      throw new HttpException('Github Api rate limit exceeded', 500);
+    }
     if (commits?.message === 'Not Found') {
       throw new HttpException('Not found', 404);
     }
 
     return formatResponse(commits as Commit[])
+
   }
 }
