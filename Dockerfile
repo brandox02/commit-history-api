@@ -58,6 +58,7 @@ ENV NODE_ENV production
 COPY --chown=${USER}:${USER} --from=build ${WORK_DIR}/node_modules ./node_modules
 COPY --chown=${USER}:${USER} --from=build ${WORK_DIR}/dist ./dist
 COPY --from=build ${WORK_DIR}/package.json ./package.json
+COPY --from=build ${WORK_DIR}/tsconfig.json ./tsconfig.json
 
 
 EXPOSE ${PORT}

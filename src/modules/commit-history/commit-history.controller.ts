@@ -1,6 +1,5 @@
-import { ClassSerializerInterceptor, Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ClassSerializerInterceptor, Controller, Get, Query, UseInterceptors } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CommitHistoryService } from './commit-history.service';
 import { FindCommitHistoryDto } from './dto/find-commit-history.dto';
 
@@ -11,8 +10,6 @@ export class CommitHistoryController {
   constructor(private readonly commitHistoryService: CommitHistoryService) { }
 
   @Get()
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   findAll(@Query() data: FindCommitHistoryDto) {
     return this.commitHistoryService.findAll(data);
   }

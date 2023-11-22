@@ -9,7 +9,7 @@ export class CommitHistoryService {
 
     function formatResponse(commits: Commit[]): FindCommitHistoryOutputDto[] {
       return commits.map(({ commit: { comment_count, author, committer, message, }, html_url, node_id, author: { avatar_url } }) => ({
-        author: author,
+        author,
         comment_count,
         committer,
         message,
@@ -19,7 +19,7 @@ export class CommitHistoryService {
       }))
     }
 
-    const response = await fetch(`https://api.github.com/repos/${username}/${repo}/commits`);
+    const response = await fetch(`${process.env.GITHUB_API_URL}/repos/${username}/${repo}/commits`);
     const commits = await response.json();
     if (commits?.message && commits.message.includes('API rate limit exceeded')) {
       throw new HttpException('Github Api rate limit exceeded', 500);
@@ -28,6 +28,6 @@ export class CommitHistoryService {
       throw new HttpException('Not found', 404);
     }
 
-    return formatResponse(commits as Commit[])
+    return formatResponse(commits as Commit[]);
   }
 }
