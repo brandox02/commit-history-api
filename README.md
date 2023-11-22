@@ -6,7 +6,11 @@ This is meeting-history-api, is build under the top-line web frameworks of nodej
 First, you need to set up the .env file, in order to make it, you just have to put the `.env` file i have sent you via email at the project's root.
 
 
-Once it is done, you are ready to start the project using docker, you just need to run 
+Once it is done, you are ready to start the project using docker, you just need to run the followings at the project's root
+
+```bash
+docker build -t commit-history-api .
+```
 
 ```bash
 docker-compose up
